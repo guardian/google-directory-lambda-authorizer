@@ -1,7 +1,6 @@
-package com.gu.erasure.lambda
+package com.gu.directoryauthorizer
 
 import com.amazonaws.auth.policy.{Policy, Statement}
-import com.gu.directoryauthorizer.{AuthResponse, AuthResponseJson}
 import org.scalactic.{Equality, _}
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
