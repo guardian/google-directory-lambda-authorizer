@@ -56,3 +56,79 @@ You can now send requests to your API including an `Authorization` header in the
 ```
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
+
+## cloudformation example
+This is an example template (using [AWS SAM](https://github.com/awslabs/serverless-application-model)) that defines an API with a single method, function, and the custom authorizer defined above.
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  SampleAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: Sample_API
+      StageName: PROD
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      DefinitionBody:
+        swagger: "2.0"
+        securityDefinitions:
+          googleAuthorizer:
+            type: apiKey
+            name: Authorization
+            in: header
+            x-amazon-apigateway-authtype: oauth2
+            x-amazon-apigateway-authorizer:
+              authorizerUri:
+                Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GoogleDirectoryAuthorizer.Arn}/invocations
+              identitySource: method.request.header.Authorization
+              identityValidationExpression: "Bearer (.*)"
+              name: Google OAuth
+              type: TOKEN
+        info:
+          title:
+            Fn::Sub: Sample API
+          description: API to demonstrate custom Google Directory authorizer
+        paths:
+          /ping:
+            get:
+              summary: ping
+              responses:
+                '204':
+                  description: OK
+              security:
+                - googleAuthorizer: []
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Ping.Arn}/invocations
+                responses:
+                  '204':
+                    statusCode: 204
+
+  GoogleDirectoryAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: google-directory-authorizer
+      Description: Authorize API Gateway requests
+      Handler: com.gu.demo.MyCustomAuthorizer::handleRequest
+      Runtime: java8
+      CodeUri: target/scala-2.12/sample.jar
+      Policies:
+        - S3ReadPolicy:
+            BucketName: private-bucket
+
+  Ping:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ping
+      Description: ping
+      Handler: com.gu.demo.Ping::handleRequest
+      Runtime: java8
+      CodeUri: target/scala-2.12/sample.jar
+```
