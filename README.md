@@ -31,7 +31,7 @@ object MyCustomAuthorizer extends RequestStreamHandler {
   override def handleRequest(input: InputStream, output: OutputStream, context: Context): Unit =
     initAuthorizer().fold(
       err => throw err,
-      _.map(_.handleRequest(input, output, context))
+      _.handleRequest(input, output, context)
     )
 }
 ``` 
