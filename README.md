@@ -14,7 +14,7 @@ There are a few things to set up in order for all of this to work. You'll need:
 * add the `admin.directory.group.readonly` scope to the service account (you'll need to ask a G Suite administrator/IT support)
 
 ### 2. a lambda to use as the custom authorizer
-* create an object that wraps an instance of `GoogleDirectoryLambdaAuthorizer`...
+* create an object that extends `RequestStreamHandler` and wraps an instance of `GoogleDirectoryLambdaAuthorizer`...
 ```scala
 object MyCustomAuthorizer extends RequestStreamHandler {
   def initAuthorizer(): Either[Throwable, GoogleDirectoryLambdaAuthorizer] =
@@ -49,7 +49,10 @@ aws apigateway create-authorizer --rest-api-id 1234123412 \
     --authorizer-result-ttl-in-seconds 0
 ```
 
-Note that you must disable caching (TTL 0) since the method ARN is included in the policy returned by the authorizer.
+Note that the authorizer must be of `TOKEN` type and you must disable caching (TTL 0) since the method ARN is included in the policy returned by the authorizer.
 
 You can now send requests to your API including an `Authorization` header in the requests:
-`Authorization: Bearer YOUR_TOKEN_HERE`
+
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
