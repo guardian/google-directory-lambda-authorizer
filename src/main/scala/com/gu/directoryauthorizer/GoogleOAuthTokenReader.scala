@@ -4,18 +4,13 @@ import cats.syntax.either._
 import com.google.api.client.googleapis.auth.oauth2.{GoogleIdToken, GoogleIdTokenVerifier}
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
-import com.gu.directoryauthorizer.ServiceAccountGoogleDirectoryAPIClient.EmailAddress
-import com.gu.directoryauthorizer.GoogleOAuthTokenReader.{ClientId, IdToken}
+import com.gu.directoryauthorizer.DefaultGoogleOAuthTokenReader.{ClientId, IdToken}
 
-import scala.concurrent.ExecutionContext
-
-trait GoogleOAuthTokenReader[F[_]] {
-
-  def emailAddress(token: IdToken): F[EmailAddress]
+trait GoogleOAuthTokenReader {
+  def emailAddress(token: IdToken): Either[Throwable, String]
 }
 
-class DefaultGoogleOAuthTokenReader(clientId: ClientId)(implicit ec: ExecutionContext)
-    extends GoogleOAuthTokenReader[Either[Throwable, ?]] {
+class DefaultGoogleOAuthTokenReader(clientId: ClientId) extends GoogleOAuthTokenReader {
 
   import scala.collection.JavaConverters._
 
@@ -35,11 +30,11 @@ class DefaultGoogleOAuthTokenReader(clientId: ClientId)(implicit ec: ExecutionCo
           s"Failed to verify ID token ${token.value} (Google verification returned null). Client ID ${clientId.value}"))
     }
 
-  def emailAddress(token: IdToken): Either[Throwable, EmailAddress] =
-    verifyToken(token).map(token => EmailAddress(token.getPayload.getEmail))
+  def emailAddress(token: IdToken): Either[Throwable, String] =
+    verifyToken(token).map(token => token.getPayload.getEmail)
 }
 
-object GoogleOAuthTokenReader {
+object DefaultGoogleOAuthTokenReader {
 
   // ID token of the user to authenticate
   case class IdToken(value: String) extends AnyVal
